@@ -36,6 +36,32 @@ def replace_dollars_and_process_lines(md_content):
 
     return "\n".join(processed_lines)
 
+def remove_lines_starting_with(file_path, char):
+    # 读取原始文件内容
+    with open(file_path, 'r', encoding='utf-8') as file:
+        lines = file.readlines()
+
+    # 筛选出不以指定字符开头的行
+    filtered_lines = [line for line in lines if not line.startswith(char)]
+
+    # 将过滤后的内容写回到同一个文件或另存为新文件
+    with open(file_path, 'w', encoding='utf-8') as file:
+        file.writelines(filtered_lines)
+
+def add_line_numbers(file_path, special_char='*'):
+    # 读取处理后的文件内容
+    with open(file_path, 'r', encoding='utf-8') as file:
+        lines = file.readlines()
+
+    # 为每一行添加序号和分隔符
+    numbered_lines = [
+        f"{index + 1}{special_char} {line}" for index, line in enumerate(lines)
+    ]
+
+    # 将添加序号后的内容写回文件
+    with open(file_path, 'w', encoding='utf-8') as file:
+        file.writelines(numbered_lines)
+
 def process_file(file_path):
     """
     读取.md文件，处理内容后保存为同名.txt文件。
@@ -48,7 +74,8 @@ def process_file(file_path):
     txt_file_path = os.path.splitext(file_path)[0] + '.txt'
     with open(txt_file_path, 'w', encoding='utf-8') as txt_file:
         txt_file.write(processed_content)
-    
+    remove_lines_starting_with(txt_file_path, '#')
+    add_line_numbers(txt_file_path,';')
     messagebox.showinfo("完成", f"文件已保存为: {txt_file_path}")
 
 def on_file_drop(event):
