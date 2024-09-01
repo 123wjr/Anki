@@ -63,7 +63,8 @@ def process_paragraph(paragraph_text):
     
     # Replace right parentheses `)` with `}}`
     modified_text = re.sub(r'\）', '}}）', modified_text)
-
+    #去除txt中空格
+    modified_text = str.replace(" ","")
     # Check if the original text had no parentheses, return None to indicate deletion
     if '（' not in paragraph_text and '）' not in paragraph_text:
         return None
