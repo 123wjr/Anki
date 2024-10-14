@@ -1,0 +1,178 @@
+<style>
+    :root {
+        --body-bg: #333; /* 网页背景颜色 */
+        --font-size: 15vw; /* 时钟字体大小 */
+        --center-border: 0.3vw solid #000; /* 翻页中间的边框色 */
+        --col-width: 13vw; /* 6个时间块的宽度 */
+        --col-height: 18vw; /* 时钟高度 */
+        --col-color: #ddd; /* 时钟字体颜色 */
+        --col-bg: #1a1a1a; /* 时钟背景色 */
+    }
+
+    body {
+        background-color: var(--body-bg);
+    }
+
+    .time {
+        position: absolute;
+        inset: 0;
+        justify-content: center;
+        align-items: center;
+        display: flex;
+        gap: 1vw;
+        font-family: sans-serif;
+        font-weight: 700;
+        overflow: hidden;
+    }
+
+    .col {
+        width: var(--col-width);
+        height: var(--col-height);
+        perspective: var(--col-height);
+    }
+    .col:nth-child(3),
+    .col:nth-child(5) {
+        margin-left: 4vw;
+    }
+
+    .curr,
+    .next {
+        position: relative;
+        width: var(--col-width);
+        height: calc(var(--col-height) / 2);
+        font-size: var(--font-size);
+        background: var(--col-bg);
+        border-radius: 1vw;
+        color: var(--col-color);
+        overflow: hidden;
+        box-sizing: border-box;
+    }
+
+    .flip .curr::before,
+    .flip .next::before,
+    .col > .curr::before,
+    .col > .next::before {
+        position: absolute;
+        content: attr(data-t);
+        line-height: var(--col-height);
+        text-align: center;
+        height: var(--col-height);
+        left: 0;
+        right: 0;
+    }
+
+    .flip .curr::before,
+    .col > .next::before {
+        top: 0;
+    }
+
+    .flip .next::before,
+    .col > .curr::before {
+        bottom: 0;
+    }
+
+    .flip .curr,
+    .col > .next {
+        border-bottom: var(--center-border);
+    }
+
+    .flip .next,
+    .col > .curr {
+        border-top: var(--center-border);
+    }
+
+    .flip .next {
+        transform: rotateX(-180deg);
+        backface-visibility: hidden;
+    }
+
+    .flip .curr {
+        position: absolute;
+        top: 0;
+        backface-visibility: hidden;
+    }
+
+    .flip {
+        position: absolute;
+        width: var(--col-width);
+        height: var(--col-height);
+        z-index: 1;
+        transform-style: preserve-3d;
+        transition: transform 0s;
+        transform: rotateX(0);
+    }
+
+    .flip.active {
+        transition: all 0.5s ease-in-out;
+        transform: rotateX(-180deg);
+    }
+</style>
+<div class="time" id="time"></div>
+<script>
+    const colElms = [];
+
+    function getTimeStr(date = new Date()) {
+        return [date.getHours(), date.getMinutes(), date.getSeconds()]
+            .map((item) => item.toString().padStart(2, "0"))
+            .join("");
+    }
+
+    function createCol() {
+        const createEl = (cls) => {
+            const div = document.createElement("div");
+            div.classList.add(cls);
+            return div;
+        };
+        const [col, flip, flipNext, flipCurr, next, curr] = ["col", "flip", "next", "curr", "next", "curr"].map(
+            (cls) => createEl(cls)
+        );
+        flip.append(flipNext, flipCurr);
+        col.append(flip, next, curr);
+        time.append(col);
+        return {
+            toggleActive: () => flip.classList.toggle("active"),
+            getCurr: () => curr.dataset.t,
+            setCurr: (t) => [flipCurr, curr].forEach((el) => (el.dataset.t = t)),
+            setNext: (t) => [flipNext, next].forEach((el) => (el.dataset.t = t)),
+        };
+    }
+
+    for (let i = 0; i < 6; i++) {
+        colElms.push(createCol());
+    }
+
+    const timeStr = getTimeStr();
+    colElms.forEach(({ setCurr }, i) => {
+        setCurr(timeStr[i]);
+    });
+
+    let lastSec = new Date().getSeconds();
+    function updateTime() {
+        let s = new Date().getSeconds();
+        if (s === lastSec) {
+            return;
+        }
+        lastSec = s;
+        const currStr = getTimeStr();
+        colElms.forEach(({ toggleActive, getCurr, setCurr, setNext }, i) => {
+            var currTxt = getCurr();
+            setNext(currStr[i]);
+            if (currTxt !== currStr[i]) {
+                toggleActive();
+                setTimeout(() => {
+                    toggleActive();
+                    setCurr(currStr[i]);
+                }, 500);
+            }
+        });
+    }
+
+    function run() {
+        updateTime();
+        setTimeout(() => {
+            run();
+        }, 1000 / 60);
+    }
+
+    run();
+</script>

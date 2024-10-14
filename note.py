@@ -49,7 +49,7 @@ def handle_drop(event):
     file_path = event.data.strip('{}')  # 处理路径
     if file_path.lower().endswith('.docx'):
         # 获取保存目录
-        output_folder = 'D:/OneDrive - 8yb506/电脑文件/桌面/General - 学习共享/语文/文言文白皮注解/txt'
+        output_folder = 'D:/OneDrive - 8yb506/电脑与手机/桌面/General - 学习共享/语文/文言文白皮注解/txt'
         if output_folder:
             # 处理文档中的粗体字，添加 <b> 和 </b> 标签
             processed_text = process_bold_tags(file_path)
