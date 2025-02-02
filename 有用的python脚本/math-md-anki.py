@@ -71,5 +71,5 @@ def process_files_in_folder(folder_path):
             output_file.writelines(output_lines)
 
 # 示例调用
-folder_path = r'd:/OneDrive - 8yb506/文件/笔记本/课内学习/02数学/数学错题'
+folder_path = r'D:/笔记本/课内学习/02数学/数学错题'
 process_files_in_folder(folder_path)

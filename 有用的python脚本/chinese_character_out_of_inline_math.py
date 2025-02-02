@@ -40,5 +40,5 @@ def process_folder(folder_path):
                 process_file(os.path.join(root, file))
 
 # 替换为你的文件夹路径
-folder_path = 'D:/OneDrive - 8yb506/文件/笔记本/课内学习/02数学/数学错题'
+folder_path = 'D:/笔记本/课内学习/02数学/数学错题'
 process_folder(folder_path)
