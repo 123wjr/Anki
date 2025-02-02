@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>舒尔特方格训练器</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: #f0f2f5;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            position: relative;
+        }
+
+        #grid {
+            display: grid;
+            gap: 0;
+            margin: 2rem;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .cell {
+            width: 100px;
+            height: 100px;
+            border: 2px solid #333;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            background: white;
+            position: relative;
+            border-radius: 0;
+        }
+
+        .cell:active {
+            transform: translateY(2px);
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .correct { background: #e8f5e9 !important; }
+        .wrong { background: #ffebee !important; }
+
+        #timer {
+            font-size: 32px;
+            font-weight: 600;
+            color: #2c3e50;
+            margin: 1rem;
+        }
+
+        button {
+            padding: 12px 24px;
+            background: #3498db;
+            color: white;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin: 1rem;
+            box-shadow: 0 4px 12px rgba(52,152,219,0.3);
+        }
+
+        .charts {
+            display: none;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            padding: 2rem;
+            border-radius: 16px;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.1);
+            z-index: 10;
+            width: 80%;
+            max-width: 1000px;
+        }
+
+        .charts.active {
+            display: flex;
+            gap: 2rem;
+        }
+
+        .chart-container {
+            flex: 1;
+            min-width: 300px;
+        }
+
+        .corner-tl { border-top-left-radius: 16px !important; }
+        .corner-tr { border-top-right-radius: 16px !important; }
+        .corner-bl { border-bottom-left-radius: 16px !important; }
+        .corner-br { border-bottom-right-radius: 16px !important; }
+        
+        #sizeSelector {
+            padding: 8px 16px;
+            border-radius: 20px;
+            border: 2px solid #3498db;
+            margin: 1rem;
+            font-size: 16px;
+        }
+    </style>
+</head>
+<body>
+    <select id="sizeSelector" onchange="initGame()">
+        <option value="3">3x3</option>
+        <option value="4">4x4</option>
+        <option value="5">5x5</option>
+        <option value="6">6x6</option>
+    </select>
+    <div id="timer">00:00:000</div>
+    <div id="grid"></div>
+    <button onclick="initGame()">新游戏</button>
+    <div class="charts">
+        <div class="chart-container"><canvas id="weekChart"></canvas></div>
+        <div class="chart-container"><canvas id="monthChart"></canvas></div>
+    </div>
+
+<script>
+function saveToLog(record) {
+    const logEntry = `[${new Date().toLocaleString()}] 尺寸: ${currentSize}x${currentSize} 用时: ${record.formatted}\n`;
+    const blob = new Blob([logEntry], { type: 'text/plain' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'schulte.log';
+    a.click();
+}
+let currentSize = 3; // 当前网格尺寸
+let currentNumber = 1;
+let startTime = null;
+let timerInterval = null;
+let gameActive = false;
+let weekChart = null;
+let monthChart = null;
+const records = JSON.parse(localStorage.getItem('schulteRecords') || '[]');
+
+function generateGrid(size) {
+    currentSize = size;
+    const total = size * size;
+    const numbers = Array.from({length: total}, (_, i) => i + 1);
+    numbers.sort(() => Math.random() - 0.5);
+    
+    const grid = document.getElementById('grid');
+    grid.style.gridTemplateColumns = `repeat(${size}, 100px)`;
+    grid.innerHTML = numbers.map((num, index) => {
+        let classes = 'cell';
+        // 动态计算圆角位置
+        if (index === 0) classes += ' corner-tl';
+        if (index === size - 1) classes += ' corner-tr';
+        if (index === size * (size - 1)) classes += ' corner-bl';
+        if (index === size * size - 1) classes += ' corner-br';
+        return `<div class="${classes}" data-value="${num}" onclick="handleClick(${num})">${num}</div>`;
+    }).join('');
+}
+
+function handleClick(num) {
+    if (!gameActive) {
+        if (num === 1) {
+            gameActive = true;
+            startTime = Date.now();
+            timerInterval = setInterval(updateTimer, 10);
+            document.querySelector(`[data-value="1"]`).classList.add('correct');
+            currentNumber++;
+        }
+        return;
+    }
+    
+
+    const cell = document.querySelector(`[data-value="${num}"]`);
+    if (num === currentNumber) {
+        cell.classList.add('correct');
+        currentNumber++;
+        let judge = currentSize * currentSize + 1;
+        if (currentNumber === judge) {
+            endGame(true);
+        }
+    } else {
+        cell.classList.add('wrong');
+        endGame(false);
+    }
+}
+
+function updateTimer() {
+    const elapsed = Date.now() - startTime;
+    const ms = elapsed % 1000;
+    const sec = Math.floor(elapsed / 1000) % 60;
+    const min = Math.floor(elapsed / 1000 / 60);
+    document.getElementById('timer').textContent = 
+        `${String(min).padStart(2, '0')}:${String(sec).padStart(2, '0')}:${String(ms).padStart(3, '0')}`;
+}
+
+function endGame(success) {
+    clearInterval(timerInterval);
+    gameActive = false;
+    
+    if (success) {
+        const time = Date.now() - startTime;
+        const record = {
+            date: new Date().toISOString(),
+            time: time,
+            formatted: document.getElementById('timer').textContent
+        };
+        records.push(record);
+        localStorage.setItem('schulteRecords', JSON.stringify(records));
+        saveToLog(record);
+    }
+    
+    // 隐藏游戏界面
+    document.getElementById('grid').style.display = 'none';
+    document.querySelector('button').style.display = 'none';
+    // 显示图表
+    document.querySelector('.charts').classList.add('active');
+    updateCharts();
+}
+
+function initGame() {
+    const size = parseInt(document.getElementById('sizeSelector').value);
+    currentNumber = 1;
+    gameActive = false;
+    clearInterval(timerInterval);
+    document.getElementById('timer').textContent = '00:00:000';
+    document.getElementById('grid').style.display = 'grid';
+    document.querySelector('button').style.display = 'block';
+    document.querySelector('.charts').classList.remove('active');
+    generateGrid(size);
+}
+
+function updateCharts() {
+    // 销毁旧图表
+    if (weekChart) weekChart.destroy();
+    if (monthChart) monthChart.destroy();
+
+    // 近7天数据
+    const weekData = records.slice(-7).map(r => ({
+        x: new Date(r.date),
+        y: r.time
+    }));
+
+    // 近30天数据
+    const monthData = Array(30).fill(0).map((_, i) => {
+        const targetDate = new Date();
+        targetDate.setDate(targetDate.getDate() - 29 + i);
+        return records.filter(r => 
+            new Date(r.date).toDateString() === targetDate.toDateString()
+        ).reduce((sum, r) => sum + r.time, 0);
+    });
+
+    // 周图表
+    weekChart = new Chart(document.getElementById('weekChart'), {
+        type: 'line',
+        data: {
+            datasets: [{
+                label: '用时 (毫秒)',
+                data: weekData,
+                borderColor: '#3498db',
+                tension: 0.4,
+                pointRadius: 4
+            }]
+        },
+        options: {
+            parsing: {
+                xAxisKey: 'x',
+                yAxisKey: 'y'
+            },
+            scales: {
+                x: {
+                    type: 'time',
+                    time: { unit: 'day' },
+                    title: { display: true, text: '日期' }
+                },
+                y: {
+                    title: { display: true, text: '用时 (ms)' }
+                }
+            }
+        }
+    });
+
+    // 月图表
+    monthChart = new Chart(document.getElementById('monthChart'), {
+        type: 'line',
+        data: {
+            labels: Array(30).fill().map((_,i) => `${29-i}天前`),
+            datasets: [{
+                label: '每日总用时',
+                data: monthData,
+                borderColor: '#e74c3c',
+                tension: 0.4
+            }]
+        },
+        options: {
+            scales: {
+                y: {
+                    title: { display: true, text: '总用时 (ms)' }
+                }
+            }
+        }
+    });
+}
+
+// 初始化
+initGame();
+</script>
+</body>
+</html>
