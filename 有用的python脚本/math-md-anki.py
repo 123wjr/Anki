@@ -103,6 +103,9 @@ def process_files_in_folder(folder_path):
         with open(output_file_path, 'w', encoding='utf-8') as output_file:
             output_file.writelines(output_lines)
 
+def media_process(folder_path):
+    subprocess.call(['python', 'Anki/有用的python脚本/格式化.py'])
+
 def open_folder_and_run_anki(folder_path, anki_path):
     # 打开文件管理器
     os.startfile(folder_path)
@@ -113,5 +116,6 @@ def open_folder_and_run_anki(folder_path, anki_path):
 # 示例调用
 folder_path = r'D:/GitHub/笔记本/课内学习/02数学/数学错题'
 anki_path = r'D:/Program Files (x86)/Anki/anki.exe'
+media_process(folder_path)
 process_files_in_folder(folder_path)
 open_folder_and_run_anki(folder_path, anki_path)
